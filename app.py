@@ -2,7 +2,9 @@ import streamlit as st
 import re
 from datetime import datetime
 from dataclasses import dataclass, field
-from typing import List, Dict
+from typing import List
+from docx import Document
+import io
 
 RULE_VERSION = "2026-02-04"
 BRIEF_VERSION = "2026-02"
@@ -58,6 +60,14 @@ class CheckResult:
     total: int = 0
     issues: List[str] = field(default_factory=list)
 
+def read_docx(file):
+    doc = Document(io.BytesIO(file.read()))
+    text = []
+    for para in doc.paragraphs:
+        if para.text.strip():
+            text.append(para.text)
+    return "\n".join(text)
+
 def parse_content(content):
     tags = re.findall(r'#[\w\u4e00-\u9fff]+', content)
     text = re.sub(r'#[\w\u4e00-\u9fff]+', '', content)
@@ -68,7 +78,6 @@ def run_review(content, kol, ver, reviewer):
     data = parse_content(content)
     results = {}
     
-    # 1. Keywords
     kw_issues = []
     kw_found = 0
     for kw in REVIEW_RULES["required_keywords"]:
@@ -78,7 +87,6 @@ def run_review(content, kol, ver, reviewer):
             kw_issues.append(f"缺少: {kw}")
     results["keywords"] = CheckResult("必须关键词", len(kw_issues)==0, kw_found, len(REVIEW_RULES["required_keywords"]), kw_issues)
     
-    # 2. Forbidden
     fb_issues = []
     exceptions = REVIEW_RULES["allowed_exceptions"]
     for cat, words in REVIEW_RULES["forbidden_words"].items():
@@ -90,7 +98,6 @@ def run_review(content, kol, ver, reviewer):
                     fb_issues.append(f"{cat} [{w}] -> {sug}")
     results["forbidden"] = CheckResult("禁词检查", len(fb_issues)==0, 0, 0, fb_issues)
     
-    # 3. Selling points
     sp_issues = []
     sp_found = 0
     for sp in REVIEW_RULES["selling_points"]:
@@ -100,7 +107,6 @@ def run_review(content, kol, ver, reviewer):
             sp_issues.append(f"缺少: {sp[:20]}...")
     results["selling"] = CheckResult("不可改动卖点", sp_found==len(REVIEW_RULES["selling_points"]), sp_found, len(REVIEW_RULES["selling_points"]), sp_issues)
     
-    # 4. Structure
     st_issues = []
     if data["word_count"] > REVIEW_RULES["max_words"]:
         st_issues.append(f"字数超限: {data['word_count']}/{REVIEW_RULES['max_words']}")
@@ -108,7 +114,6 @@ def run_review(content, kol, ver, reviewer):
         st_issues.append(f"标签不足: {len(data['tags'])}/{REVIEW_RULES['min_tags']}")
     results["structure"] = CheckResult("结构完整性", len(st_issues)==0, 0, 0, st_issues)
     
-    # 5. Tags
     tg_issues = []
     tg_found = 0
     for t in REVIEW_RULES["required_tags"]:
@@ -118,7 +123,6 @@ def run_review(content, kol, ver, reviewer):
             tg_issues.append(f"缺少: {t}")
     results["tags"] = CheckResult("必提Tag", len(tg_issues)==0, tg_found, len(REVIEW_RULES["required_tags"]), tg_issues)
     
-    # Score
     score = 0
     weights = [("keywords", 0.15), ("forbidden", 0.20), ("selling", 0.30), ("structure", 0.15), ("tags", 0.20)]
     for key, w in weights:
@@ -149,11 +153,30 @@ kol = c1.text_input("👤 KOL名称", placeholder="例如: 小红薯妈妈")
 ver = c2.selectbox("📌 版本", ["V1", "V2", "V3", "FINAL"])
 reviewer = c3.selectbox("👁️ 审核方", ["赞意", "客户"])
 
-content = st.text_area("📝 稿件内容", height=250, placeholder="粘贴稿件...")
+st.markdown("### 📝 稿件内容")
+
+tab1, tab2 = st.tabs(["📄 上传文档", "✏️ 粘贴文本"])
+
+content = ""
+
+with tab1:
+    uploaded_file = st.file_uploader("上传Word文档 (.docx)", type=["docx"])
+    if uploaded_file:
+        content = read_docx(uploaded_file)
+        st.success(f"已读取文档: {uploaded_file.name}")
+        with st.expander("预览文档内容"):
+            st.text(content[:500] + "..." if len(content) > 500 else content)
+
+with tab2:
+    pasted = st.text_area("或直接粘贴稿件内容", height=250, placeholder="粘贴稿件...")
+    if pasted:
+        content = pasted
 
 if st.button("🔍 开始审核", type="primary", use_container_width=True):
-    if not kol or not content.strip():
-        st.error("请填写KOL名称和稿件内容")
+    if not kol:
+        st.error("请填写KOL名称")
+    elif not content.strip():
+        st.error("请上传文档或粘贴稿件内容")
     else:
         r = run_review(content, kol, ver, reviewer)
         
@@ -206,3 +229,22 @@ if st.button("🔍 开始审核", type="primary", use_container_width=True):
 
 st.markdown("---")
 st.caption(f"v2.0 | {RULE_VERSION}")
+```
+
+4. 点击 **Commit changes**
+
+---
+
+## 第3步：重新部署
+
+1. 打开 Render
+2. 点击 **Manual Deploy** → **Deploy latest commit**
+3. 等 3-5 分钟
+
+---
+
+## 新功能预览
+
+界面会有两个标签页：
+```
+[ 📄 上传文档 ]  [ ✏️ 粘贴文本 ]
