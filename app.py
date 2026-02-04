@@ -171,6 +171,20 @@ st.set_page_config(page_title="赞意AI审稿系统", page_icon="🤖", layout="
 st.markdown("""
 <style>
 .block-container {padding-top: 1rem !important; padding-bottom: 1rem !important;}
+/* 左栏：淡酒红色 */
+[data-testid="column"]:first-child {
+    background-color: #f5eaed;
+    border-radius: 15px;
+    padding: 20px;
+    border: 2px solid #8b4557;
+}
+/* 右栏：淡海军蓝 */
+[data-testid="column"]:nth-child(2) {
+    background-color: #e8ecf4;
+    border-radius: 15px;
+    padding: 20px;
+    border: 2px solid #2c3e6b;
+}
 /* 文件上传中文化 */
 [data-testid="stFileUploader"] [data-testid="stFileUploaderDropzone"] p {
     font-size: 0 !important;
@@ -188,30 +202,16 @@ st.markdown("""
     font-size: 14px !important;
     position: absolute;
 }
-/* 上传区样式 */
-.upload-section {
-    background-color: #f8f9fa;
-    border-radius: 12px;
-    padding: 20px;
-    border: 1px solid #e2e8f0;
-}
-/* 绿色按钮样式 */
-.green-btn button {
-    background-color: #38a169 !important;
+/* 海军蓝按钮样式 */
+.navy-btn button {
+    background-color: #2c3e6b !important;
     color: white !important;
     border: none !important;
 }
-.green-btn button:hover {
-    background-color: #2f855a !important;
+.navy-btn button:hover {
+    background-color: #1e2d52 !important;
 }
 /* 审核预览区 */
-.review-panel {
-    background: linear-gradient(135deg, #667eea10, #764ba210);
-    border: 2px solid #667eea;
-    border-radius: 15px;
-    padding: 25px;
-    margin: 20px 0;
-}
 .original-text-box {
     background-color: #ffffff;
     border: 1px solid #e2e8f0;
@@ -233,13 +233,6 @@ st.markdown("""
 .issue-card.accepted {
     background-color: #f0fff4;
     border-left-color: #68d391;
-}
-.stat-box {
-    background-color: #edf2f7;
-    border-radius: 8px;
-    padding: 10px 15px;
-    text-align: center;
-    font-weight: bold;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -277,7 +270,7 @@ if 'client_content_saved' not in st.session_state:
 col_left, col_right = st.columns(2)
 
 with col_left:
-    st.markdown("#### 📄 Step 1: 上传KOL稿件")
+    st.markdown("#### 📄 上传KOL稿件")
     kol_file = st.file_uploader("上传 .docx 文件（可拖拽上传）", type=["docx"], key="kol_file")
     kol_text = st.text_area("或粘贴内容", height=120, placeholder="粘贴KOL稿件...", key="kol_text")
 
@@ -302,7 +295,7 @@ with col_left:
             st.success(f"审核完成! 发现 {len(issues)} 个问题")
 
 with col_right:
-    st.markdown("#### 💬 Step 2: 上传客户反馈")
+    st.markdown("#### 💬 上传客户反馈")
     client_file = st.file_uploader("上传 .docx 文件（可拖拽上传）", type=["docx"], key="client_file")
     client_text = st.text_area("或粘贴内容", height=120, placeholder="粘贴客户反馈...", key="client_text")
 
@@ -314,7 +307,7 @@ with col_right:
     elif client_text:
         client_content = client_text
 
-    st.markdown('<div class="green-btn">', unsafe_allow_html=True)
+    st.markdown('<div class="navy-btn">', unsafe_allow_html=True)
     analyze_clicked = st.button("分析反馈", key="btn_analyze", use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
