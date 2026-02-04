@@ -97,7 +97,7 @@ def run_review(content, kol, ver, reviewer):
                 ctx = data["text"][max(0,data["text"].find(w)-10):data["text"].find(w)+len(w)+10]
                 if not any(e in ctx for e in exceptions):
                     sug = SUGGESTIONS.get(w, "删除")
-                    fb_issues.append(f"{cat} [{w}] -> {sug}")
+                    fb_issues.append(f"{cat} [{w}] - {sug}")
     results["forbidden"] = CheckResult("禁词检查", len(fb_issues)==0, 0, 0, fb_issues)
     
     sp_issues = []
@@ -142,49 +142,37 @@ def get_ai_suggestions(content, issues):
         return None, None
     
     issues_text = "\n".join([f"- {issue}" for issue in issues])
-    
     selling_points_text = "\n".join([f"- {sp}" for sp in REVIEW_RULES["selling_points"]])
     
-    prompt = f"""你是一个小红书KOL稿件审核专家。请帮我修改以下稿件。
+    prompt = f"""你是小红书KOL稿件审核专家。请修改以下稿件。
 
-## 原稿件:
+原稿件:
 {content}
 
-## 发现的问题:
+发现的问题:
 {issues_text}
 
-## 必须包含的卖点(不可改动原文):
+必须包含的卖点(不可改动原文):
 {selling_points_text}
 
-## 禁词替换规则:
-- 敏宝 -> 敏感体质宝宝
-- 新生儿 -> 初生宝宝
-- 过敏 -> 敏敏
-- 预防 -> 远离
-- 生长/发育 -> 成长
-- 免疫 -> 保护力
+禁词替换: 敏宝改为敏感体质宝宝, 新生儿改为初生宝宝, 过敏改为敏敏, 预防改为远离, 生长发育改为成长, 免疫改为保护力
 
-请完成以下任务:
+任务1: 列出修改建议,格式为:
+问题: xxx
+原文: xxx  
+改为: xxx
 
-### 任务1: 列出具体修改建议
-针对每个问题,用以下格式给出修改建议:
-【问题】xxx
-【原文】xxx
-【修改为】xxx
+任务2: 输出修改后的完整稿件
 
-### 任务2: 输出修改后的完整稿件
-直接输出修改好的完整稿件,保持小红书风格,自然融入所有必须卖点。
-
----
 请用以下格式回复:
 
-## 修改建议
+SUGGESTIONS_START
+(修改建议)
+SUGGESTIONS_END
 
-(列出所有修改建议)
-
-## 修改后的完整稿件
-
-(输出完整稿件)
+REVISED_START
+(完整稿件)
+REVISED_END
 """
     
     try:
@@ -196,62 +184,71 @@ def get_ai_suggestions(content, issues):
         )
         response = message.content[0].text
         
-        parts = response.split("## 修改后的完整稿件")
-        suggestions = parts[0].replace("## 修改建议", "").strip() if len(parts) > 0 else ""
-        revised = parts[1].strip() if len(parts) > 1 else ""
+        suggestions = ""
+        revised = ""
+        
+        if "SUGGESTIONS_START" in response and "SUGGESTIONS_END" in response:
+            start = response.find("SUGGESTIONS_START") + len("SUGGESTIONS_START")
+            end = response.find("SUGGESTIONS_END")
+            suggestions = response[start:end].strip()
+        
+        if "REVISED_START" in response and "REVISED_END" in response:
+            start = response.find("REVISED_START") + len("REVISED_START")
+            end = response.find("REVISED_END")
+            revised = response[start:end].strip()
         
         return suggestions, revised
     except Exception as e:
-        return f"AI调用出错: {str(e)}", None
+        return f"AI error: {str(e)}", None
 
 st.set_page_config(page_title="小红书KOL审稿系统", page_icon="🔍", layout="wide")
-st.markdown("<h1 style='text-align:center;color:#ff6b6b;'>🔍 小红书KOL审稿系统 v2.1</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align:center;color:gray;'>能恩全护 - AI智能审核 + 自动修改</p>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align:center;color:#ff6b6b;'>小红书KOL审稿系统 v2.1</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align:center;color:gray;'>能恩全护 - AI智能审核</p>", unsafe_allow_html=True)
 st.markdown("---")
 
 c1, c2 = st.columns(2)
-c1.info(f"📋 审核规则: {RULE_VERSION}")
-c2.info(f"📝 Brief: {BRIEF_VERSION}")
+c1.info(f"审核规则: {RULE_VERSION}")
+c2.info(f"Brief: {BRIEF_VERSION}")
 
-with st.expander("📖 查看Brief内容"):
+with st.expander("查看Brief内容"):
     st.markdown(BRIEF_CONTENT)
 
 st.markdown("---")
 
 c1, c2, c3 = st.columns(3)
-kol = c1.text_input("👤 KOL名称", placeholder="例如: 小红薯妈妈")
-ver = c2.selectbox("📌 版本", ["V1", "V2", "V3", "FINAL"])
-reviewer = c3.selectbox("👁️ 审核方", ["赞意", "客户"])
+kol = c1.text_input("KOL名称", placeholder="例如: 小红薯妈妈")
+ver = c2.selectbox("版本", ["V1", "V2", "V3", "FINAL"])
+reviewer = c3.selectbox("审核方", ["赞意", "客户"])
 
-st.markdown("### 📝 稿件内容")
+st.markdown("### 稿件内容")
 
-tab1, tab2 = st.tabs(["📄 上传文档", "✏️ 粘贴文本"])
+tab1, tab2 = st.tabs(["上传文档", "粘贴文本"])
 
 content = ""
 
 with tab1:
-    uploaded_file = st.file_uploader("上传Word文档 (.docx)", type=["docx"])
+    uploaded_file = st.file_uploader("上传Word文档", type=["docx"])
     if uploaded_file:
         content = read_docx(uploaded_file)
-        st.success(f"已读取文档: {uploaded_file.name}")
-        with st.expander("预览文档内容"):
+        st.success(f"已读取: {uploaded_file.name}")
+        with st.expander("预览内容"):
             st.text(content[:500] + "..." if len(content) > 500 else content)
 
 with tab2:
-    pasted = st.text_area("或直接粘贴稿件内容", height=250, placeholder="粘贴稿件...")
+    pasted = st.text_area("粘贴稿件内容", height=250, placeholder="粘贴稿件...")
     if pasted:
         content = pasted
 
-if st.button("🔍 开始审核", type="primary", use_container_width=True):
+if st.button("开始审核", type="primary", use_container_width=True):
     if not kol:
         st.error("请填写KOL名称")
     elif not content.strip():
-        st.error("请上传文档或粘贴稿件内容")
+        st.error("请上传文档或粘贴内容")
     else:
         r = run_review(content, kol, ver, reviewer)
         
         st.markdown("---")
-        st.markdown("## 📊 审核报告")
+        st.markdown("## 审核报告")
         
         c1, c2, c3, c4 = st.columns(4)
         c1.metric("KOL", f"@{r['kol']}")
@@ -273,9 +270,10 @@ if st.button("🔍 开始审核", type="primary", use_container_width=True):
         all_issues = []
         for title, key in checks:
             res = r["results"][key]
-            status = "✅通过" if res.passed else f"❌{len(res.issues)}项问题"
             if res.total > 0:
-                status = f"{'✅' if res.passed else '⚠️'} {res.found}/{res.total}"
+                status = f"{res.found}/{res.total}"
+            else:
+                status = "通过" if res.passed else f"{len(res.issues)}项问题"
             
             with st.expander(f"{title} - {status}", expanded=not res.passed):
                 if res.passed:
@@ -289,41 +287,40 @@ if st.button("🔍 开始审核", type="primary", use_container_width=True):
         st.markdown("## 二、审核总结")
         
         if r["score"] >= 90:
-            st.success("✨ 优秀!")
+            st.success("优秀!")
         elif r["score"] >= 70:
-            st.info("👍 良好")
+            st.info("良好")
         elif r["score"] >= 50:
-            st.warning("⚠️ 需改进")
+            st.warning("需改进")
         else:
-            st.error("❌ 需大改")
+            st.error("需大改")
         
         st.caption(f"字数: {r['word_count']} | 标签: {r['tag_count']}个")
         
-        # AI修改建议
         if all_issues and r["score"] < 90:
             st.markdown("---")
-            st.markdown("## 三、🤖 AI修改建议")
+            st.markdown("## 三、AI修改建议")
             
-            with st.spinner("AI正在分析并生成修改建议..."):
+            with st.spinner("AI正在生成修改建议..."):
                 suggestions, revised = get_ai_suggestions(content, all_issues)
             
             if suggestions:
-                st.markdown("### 📝 具体修改建议")
+                st.markdown("### 修改建议")
                 st.markdown(suggestions)
                 
                 if revised:
                     st.markdown("---")
-                    st.markdown("### ✨ 修改后的完整稿件")
-                    st.text_area("可直接复制使用", revised, height=300)
+                    st.markdown("### 修改后的稿件")
+                    st.text_area("可直接复制", revised, height=300)
                     
                     st.download_button(
-                        label="📥 下载修改后的稿件",
+                        label="下载修改稿件",
                         data=revised,
-                        file_name=f"{kol}_{ver}_修改版.txt",
+                        file_name=f"{kol}_{ver}_revised.txt",
                         mime="text/plain"
                     )
             else:
-                st.warning("AI服务暂时不可用,请检查API Key配置")
+                st.warning("AI服务不可用,请检查API Key")
 
 st.markdown("---")
-st.caption(f"v2.1 | {RULE_VERSION} | AI Powered by Claude")
+st.caption(f"v2.1 | {RULE_VERSION}")
