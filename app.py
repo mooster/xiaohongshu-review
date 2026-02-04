@@ -165,47 +165,12 @@ def create_annotated_docx(content, issues, selected_issues, kol_name, version, s
     buffer.seek(0)
     return buffer, title
 
+# ========== 页面配置 ==========
 st.set_page_config(page_title="赞意AI审稿系统", page_icon="🤖", layout="wide")
 
 st.markdown("""
 <style>
 .block-container {padding-top: 1rem !important; padding-bottom: 1rem !important;}
-[data-testid="column"]:first-child {
-    background-color: #fff0f3;
-    border-radius: 15px;
-    padding: 20px;
-    border: 2px solid #ff6b6b;
-}
-[data-testid="column"]:last-child {
-    background-color: #f0fff4;
-    border-radius: 15px;
-    padding: 20px;
-    border: 2px solid #38a169;
-}
-.step-badge-pink {
-    background-color: #ff6b6b;
-    color: white;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-weight: bold;
-    font-size: 14px;
-}
-.step-badge-green {
-    background-color: #38a169;
-    color: white;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-weight: bold;
-    font-size: 14px;
-}
-.file-output {
-    background-color: #f7fafc;
-    border: 1px dashed #cbd5e0;
-    padding: 10px;
-    border-radius: 8px;
-    font-family: monospace;
-    margin: 10px 0;
-}
 /* 文件上传中文化 */
 [data-testid="stFileUploader"] [data-testid="stFileUploaderDropzone"] p {
     font-size: 0 !important;
@@ -223,6 +188,13 @@ st.markdown("""
     font-size: 14px !important;
     position: absolute;
 }
+/* 上传区样式 */
+.upload-section {
+    background-color: #f8f9fa;
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid #e2e8f0;
+}
 /* 绿色按钮样式 */
 .green-btn button {
     background-color: #38a169 !important;
@@ -232,38 +204,47 @@ st.markdown("""
 .green-btn button:hover {
     background-color: #2f855a !important;
 }
-/* 在线预览区域 */
-.preview-box {
+/* 审核预览区 */
+.review-panel {
+    background: linear-gradient(135deg, #667eea10, #764ba210);
+    border: 2px solid #667eea;
+    border-radius: 15px;
+    padding: 25px;
+    margin: 20px 0;
+}
+.original-text-box {
     background-color: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 10px;
-    padding: 20px;
-    margin: 15px 0;
-    max-height: 500px;
+    padding: 15px;
+    height: 400px;
     overflow-y: auto;
-}
-.preview-title {
-    font-size: 16px;
-    font-weight: bold;
-    color: #2d3748;
-    margin-bottom: 10px;
-    padding-bottom: 8px;
-    border-bottom: 2px solid #edf2f7;
+    font-size: 14px;
+    line-height: 1.8;
 }
 .issue-card {
     background-color: #fff5f5;
     border-left: 4px solid #fc8181;
     padding: 10px 15px;
-    margin: 8px 0;
+    margin: 6px 0;
     border-radius: 0 8px 8px 0;
+    font-size: 13px;
 }
 .issue-card.accepted {
     background-color: #f0fff4;
     border-left-color: #68d391;
 }
+.stat-box {
+    background-color: #edf2f7;
+    border-radius: 8px;
+    padding: 10px 15px;
+    text-align: center;
+    font-weight: bold;
+}
 </style>
 """, unsafe_allow_html=True)
 
+# ========== 标题 ==========
 st.markdown("""
 <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; padding: 15px 25px; margin-bottom: 15px;">
     <h2 style="color: white; margin: 0;">🤖 赞意AI · 小红书KOL审稿系统</h2>
@@ -271,29 +252,34 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-col1, col2 = st.columns(2)
+# ========== 基本信息 ==========
+col1, col2, col3 = st.columns([2, 1, 1])
 with col1:
     kol_name = st.text_input("KOL名称", placeholder="例如: 团妈爱测评")
 with col2:
     version_num = st.selectbox("当前版本", [1, 2, 3, 4, 5])
+with col3:
+    st.caption(f"当前日期: {TODAY}")
 
-st.caption(f"当前日期: {TODAY}")
-
+# ========== Session State 初始化 ==========
 if 'kol_issues' not in st.session_state:
     st.session_state.kol_issues = []
 if 'kol_content' not in st.session_state:
     st.session_state.kol_content = ""
+if 'kol_data' not in st.session_state:
+    st.session_state.kol_data = None
 if 'client_analysis' not in st.session_state:
     st.session_state.client_analysis = ""
+if 'client_content_saved' not in st.session_state:
+    st.session_state.client_content_saved = ""
 
+# ========== 上传区：左右两栏 ==========
 col_left, col_right = st.columns(2)
 
 with col_left:
-    st.markdown('<span class="step-badge-pink">Step 1: KOL稿件 - 赞意审核 - 完毕给客户</span>', unsafe_allow_html=True)
-    st.markdown("#### 📄 上传KOL稿件")
-
+    st.markdown("#### 📄 Step 1: 上传KOL稿件")
     kol_file = st.file_uploader("上传 .docx 文件（可拖拽上传）", type=["docx"], key="kol_file")
-    kol_text = st.text_area("或粘贴内容", height=180, placeholder="粘贴KOL稿件...", key="kol_text")
+    kol_text = st.text_area("或粘贴内容", height=120, placeholder="粘贴KOL稿件...", key="kol_text")
 
     kol_content = ""
     if kol_file:
@@ -312,76 +298,13 @@ with col_left:
             issues, data = run_review(kol_content)
             st.session_state.kol_issues = issues
             st.session_state.kol_content = kol_content
+            st.session_state.kol_data = data
             st.success(f"审核完成! 发现 {len(issues)} 个问题")
 
-    if st.session_state.kol_issues and st.session_state.kol_content:
-        # --- 在线预览区域 ---
-        st.markdown("---")
-        st.markdown("#### 📋 在线审核预览")
-
-        # 显示稿件内容预览
-        with st.expander("📄 查看稿件原文", expanded=False):
-            st.text_area("稿件内容", st.session_state.kol_content, height=200, disabled=True, key="preview_content")
-
-        # 审核意见 - 逐条勾选
-        st.markdown("#### ✏️ 审核意见（勾选采纳的批注）")
-
-        issue_types = {"keyword": "关键词", "forbidden": "禁词", "selling": "卖点", "structure": "结构", "tag": "标签"}
-        selected = []
-
-        # 按类型分组显示
-        grouped = {}
-        for i, issue in enumerate(st.session_state.kol_issues):
-            t = issue["type"]
-            if t not in grouped:
-                grouped[t] = []
-            grouped[t].append((i, issue))
-
-        for issue_type, items in grouped.items():
-            type_label = issue_types.get(issue_type, issue_type)
-            st.markdown(f"**{type_label}类问题** ({len(items)}条)")
-            for i, issue in items:
-                col_check, col_text = st.columns([0.05, 0.95])
-                with col_check:
-                    checked = st.checkbox("", key=f"iss_{i}", value=True, label_visibility="collapsed")
-                with col_text:
-                    if checked:
-                        selected.append(i)
-                        st.markdown(f'<div class="issue-card accepted">✅ {issue["desc"]}<br><small>建议: {issue["suggestion"]}</small></div>', unsafe_allow_html=True)
-                    else:
-                        st.markdown(f'<div class="issue-card">❌ {issue["desc"]}<br><small>建议: {issue["suggestion"]}</small></div>', unsafe_allow_html=True)
-
-        # 补充意见输入
-        st.markdown("---")
-        st.markdown("#### 💬 补充意见（可选）")
-        extra_comments = st.text_area("在此输入额外的审核意见或备注", height=100, placeholder="例如: 整体语气偏硬，建议更口语化一些...", key="extra_comments")
-
-        # 统计
-        st.markdown("---")
-        total = len(st.session_state.kol_issues)
-        accepted = len(selected)
-        st.markdown(f"**审核统计**: 共 {total} 条意见，已采纳 {accepted} 条，未采纳 {total - accepted} 条")
-
-        # 生成文档
-        if kol_name:
-            output_name = f"{kol_name}_{TODAY}_KOL-赞意_第{version_num}版"
-            st.markdown(f'<div class="file-output">📁 {output_name}.docx</div>', unsafe_allow_html=True)
-
-            if st.button("确认并生成批注文档", key="btn_gen_kol", use_container_width=True):
-                buffer, title = create_annotated_docx(
-                    st.session_state.kol_content,
-                    st.session_state.kol_issues,
-                    selected, kol_name, version_num, 2,
-                    extra_comments if extra_comments else None
-                )
-                st.download_button("下载文档 - 可发给客户", buffer, f"{output_name}.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", key="dl_kol")
-
 with col_right:
-    st.markdown('<span class="step-badge-green">Step 2: 客户反馈 - 赞意处理 - 完毕给KOL</span>', unsafe_allow_html=True)
-    st.markdown("#### 💬 上传客户反馈")
-
+    st.markdown("#### 💬 Step 2: 上传客户反馈")
     client_file = st.file_uploader("上传 .docx 文件（可拖拽上传）", type=["docx"], key="client_file")
-    client_text = st.text_area("或粘贴内容", height=180, placeholder="粘贴客户反馈...", key="client_text")
+    client_text = st.text_area("或粘贴内容", height=120, placeholder="粘贴客户反馈...", key="client_text")
 
     client_content = ""
     if client_file:
@@ -391,7 +314,6 @@ with col_right:
     elif client_text:
         client_content = client_text
 
-    # 绿色按钮
     st.markdown('<div class="green-btn">', unsafe_allow_html=True)
     analyze_clicked = st.button("分析反馈", key="btn_analyze", use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
@@ -402,16 +324,113 @@ with col_right:
         elif not client_content:
             st.error("请上传或粘贴客户反馈")
         elif not st.session_state.kol_content:
-            st.error("请先在左侧上传KOL原稿")
+            st.error("请先上传KOL原稿并审核")
         else:
+            st.session_state.client_content_saved = client_content
             with st.spinner("AI分析中..."):
                 analysis = analyze_client_feedback(st.session_state.kol_content, client_content)
                 st.session_state.client_analysis = analysis
 
-    if st.session_state.client_analysis:
-        st.markdown("---")
-        st.markdown("#### 📋 修改分析预览")
+# ========== 审核预览区（全宽，横跨两栏） ==========
+if st.session_state.kol_issues and st.session_state.kol_content:
+    st.markdown("---")
+    st.markdown("### 📋 在线审核预览")
 
+    # 统计栏
+    total = len(st.session_state.kol_issues)
+    data = st.session_state.kol_data
+    word_count = data["word_count"] if data else 0
+    tag_count = len(data["tags"]) if data else 0
+
+    s1, s2, s3, s4 = st.columns(4)
+    s1.metric("审核问题", f"{total} 条")
+    s2.metric("稿件字数", f"{word_count}")
+    s3.metric("标签数量", f"{tag_count}")
+    s4.metric("字数上限", f"{REVIEW_RULES['max_words']}")
+
+    # 左：原文 | 右：审核意见
+    preview_left, preview_right = st.columns([1, 1])
+
+    with preview_left:
+        st.markdown("#### 📄 稿件原文")
+        # 把原文中的禁词高亮显示
+        highlighted = st.session_state.kol_content
+        for cat, words in REVIEW_RULES["forbidden_words"].items():
+            for w in words:
+                if w in highlighted:
+                    highlighted = highlighted.replace(w, f'<mark style="background-color:#fed7d7;padding:2px 4px;border-radius:3px;">{w}</mark>')
+        # 把必含关键词高亮
+        for kw in REVIEW_RULES["required_keywords"]:
+            if kw in highlighted:
+                highlighted = highlighted.replace(kw, f'<mark style="background-color:#c6f6d5;padding:2px 4px;border-radius:3px;">{kw}</mark>')
+
+        html_content = highlighted.replace('\n', '<br>')
+        st.markdown(f'<div class="original-text-box">{html_content}</div>', unsafe_allow_html=True)
+
+    with preview_right:
+        st.markdown("#### ✏️ 审核意见（勾选采纳）")
+
+        issue_types = {"keyword": "🔑 关键词", "forbidden": "🚫 禁词", "selling": "💡 卖点", "structure": "📐 结构", "tag": "🏷️ 标签"}
+        selected = []
+
+        # 按类型分组
+        grouped = {}
+        for i, issue in enumerate(st.session_state.kol_issues):
+            t = issue["type"]
+            if t not in grouped:
+                grouped[t] = []
+            grouped[t].append((i, issue))
+
+        for issue_type, items in grouped.items():
+            type_label = issue_types.get(issue_type, issue_type)
+            with st.expander(f"{type_label} ({len(items)}条)", expanded=(issue_type in ["forbidden", "keyword"])):
+                for i, issue in items:
+                    checked = st.checkbox(issue["desc"], key=f"iss_{i}", value=True)
+                    if checked:
+                        selected.append(i)
+                    st.caption(f"建议: {issue['suggestion']}")
+
+    # 补充意见 + 生成文档（全宽）
+    st.markdown("---")
+    comment_col, action_col = st.columns([2, 1])
+
+    with comment_col:
+        st.markdown("#### 💬 补充意见（可选）")
+        extra_comments = st.text_area("输入额外的审核意见或备注", height=80, placeholder="例如: 整体语气偏硬，建议更口语化一些...", key="extra_comments")
+
+    with action_col:
+        st.markdown("#### 📊 审核统计")
+        accepted = len(selected)
+        st.markdown(f"已采纳 **{accepted}** / {total} 条")
+        st.progress(accepted / total if total > 0 else 0)
+
+        if kol_name:
+            output_name = f"{kol_name}_{TODAY}_KOL-赞意_第{version_num}版"
+            st.markdown(f"`📁 {output_name}.docx`")
+
+            if st.button("确认并生成批注文档", key="btn_gen_kol", use_container_width=True, type="primary"):
+                buffer, title = create_annotated_docx(
+                    st.session_state.kol_content,
+                    st.session_state.kol_issues,
+                    selected, kol_name, version_num, 2,
+                    extra_comments if extra_comments else None
+                )
+                st.download_button("下载文档 - 可发给客户", buffer, f"{output_name}.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", key="dl_kol")
+
+# ========== 客户反馈分析区（全宽） ==========
+if st.session_state.client_analysis:
+    st.markdown("---")
+    st.markdown("### 💬 客户反馈分析")
+
+    feedback_left, feedback_right = st.columns([1, 1])
+
+    with feedback_left:
+        st.markdown("#### 📄 客户修改内容")
+        if st.session_state.client_content_saved:
+            st.markdown(f'<div class="original-text-box">{st.session_state.client_content_saved.replace(chr(10), "<br>")}</div>', unsafe_allow_html=True)
+
+    with feedback_right:
+        st.markdown("#### ✏️ 修改分析")
         if "===修改分析===" in st.session_state.client_analysis:
             parts = st.session_state.client_analysis.split("===总结===")
             analysis_part = parts[0].replace("===修改分析===", "").strip()
@@ -434,31 +453,30 @@ with col_right:
 
             for i, c in enumerate(changes):
                 is_ok = "符合" in c.get("status", "")
-                col_check, col_text = st.columns([0.05, 0.95])
-                with col_check:
-                    st.checkbox("", key=f"cc_{i}", value=is_ok, label_visibility="collapsed")
-                with col_text:
-                    status_icon = "✅" if is_ok else "⚠️"
-                    card_class = "accepted" if is_ok else ""
-                    desc = c.get('desc', '')
-                    sug = c.get('suggestion', '')
-                    st.markdown(f'<div class="issue-card {card_class}">{status_icon} {desc}<br><small>{sug}</small></div>', unsafe_allow_html=True)
+                checked = st.checkbox(c.get('desc', ''), key=f"cc_{i}", value=is_ok)
+                status_icon = "✅" if is_ok else "⚠️"
+                if c.get("suggestion"):
+                    st.caption(f"{status_icon} {c['suggestion']}")
 
             if len(parts) > 1:
                 st.info(parts[1].strip())
         else:
             st.write(st.session_state.client_analysis)
 
-        # 补充意见
-        st.markdown("---")
+    # 补充意见 + 生成
+    st.markdown("---")
+    fc_col, fa_col = st.columns([2, 1])
+
+    with fc_col:
         st.markdown("#### 💬 补充意见给KOL（可选）")
-        client_extra = st.text_area("在此输入额外的反馈意见", height=100, placeholder="例如: 客户希望第3张图片突出产品包装...", key="client_extra")
+        client_extra = st.text_area("输入额外的反馈意见", height=80, placeholder="例如: 客户希望第3张图片突出产品包装...", key="client_extra")
 
-        if kol_name and client_content:
+    with fa_col:
+        if kol_name:
             output_name = f"{kol_name}_{TODAY}_KOL-赞意-客户_第{version_num}版"
-            st.markdown(f'<div class="file-output">📁 {output_name}.docx</div>', unsafe_allow_html=True)
+            st.markdown(f"`📁 {output_name}.docx`")
 
-            if st.button("确认并生成给KOL的文档", key="btn_gen_client", use_container_width=True):
+            if st.button("确认并生成给KOL的文档", key="btn_gen_client", use_container_width=True, type="primary"):
                 doc = Document()
                 doc.add_heading(output_name, 0)
                 doc.add_paragraph(f"处理时间: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
@@ -471,7 +489,8 @@ with col_right:
                     doc.add_paragraph(client_extra)
                 doc.add_paragraph("---")
                 doc.add_heading("修改后内容", level=1)
-                for line in client_content.split('\n'):
+                saved = st.session_state.client_content_saved
+                for line in saved.split('\n'):
                     if line.strip():
                         doc.add_paragraph(line)
                 buffer = io.BytesIO()
@@ -480,4 +499,4 @@ with col_right:
                 st.download_button("下载文档 - 可发给KOL", buffer, f"{output_name}.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", key="dl_client")
 
 st.markdown("---")
-st.caption("🤖 赞意AI审稿系统 v3.1")
+st.caption("🤖 赞意AI审稿系统 v3.2")
