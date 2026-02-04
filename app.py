@@ -126,7 +126,7 @@ def analyze_client_feedback(original, client_modified):
 """
     return call_claude_api(prompt)
 
-def create_annotated_docx(content, issues, selected_issues, kol_name, version, step, extra_comments=None):
+def create_annotated_docx(content, issues, selected_issues, kol_name, version, step, extra_comments=None, selling_inputs=None):
     doc = Document()
     if step == 2:
         title = f"{kol_name}_{TODAY}_KOL-赞意_第{version}版"
@@ -148,6 +148,10 @@ def create_annotated_docx(content, issues, selected_issues, kol_name, version, s
                 p = doc.add_paragraph()
                 p.add_run(f"{i+1}. {issue['desc']}").bold = True
                 p.add_run(f"\n   建议: {issue['suggestion']}")
+                # 如果是卖点类且有自定义写法
+                sp_key = f"sp_{idx}"
+                if selling_inputs and sp_key in selling_inputs and selling_inputs[sp_key]:
+                    p.add_run(f"\n   推荐表达: {selling_inputs[sp_key]}")
         doc.add_paragraph("---")
 
     if extra_comments:
@@ -265,6 +269,10 @@ if 'client_analysis' not in st.session_state:
     st.session_state.client_analysis = ""
 if 'client_content_saved' not in st.session_state:
     st.session_state.client_content_saved = ""
+if 'selling_suggestions' not in st.session_state:
+    st.session_state.selling_suggestions = {}
+if 'selling_inputs' not in st.session_state:
+    st.session_state.selling_inputs = {}
 
 # ========== 上传区：左右两栏 ==========
 col_left, col_right = st.columns(2)
@@ -376,12 +384,62 @@ if st.session_state.kol_issues and st.session_state.kol_content:
 
         for issue_type, items in grouped.items():
             type_label = issue_types.get(issue_type, issue_type)
-            with st.expander(f"{type_label} ({len(items)}条)", expanded=(issue_type in ["forbidden", "keyword"])):
+            is_selling = (issue_type == "selling")
+            with st.expander(f"{type_label} ({len(items)}条)", expanded=(issue_type in ["forbidden", "keyword", "selling"])):
                 for i, issue in items:
                     checked = st.checkbox(issue["desc"], key=f"iss_{i}", value=True)
                     if checked:
                         selected.append(i)
                     st.caption(f"建议: {issue['suggestion']}")
+
+                    # 卖点类：提供在线输入 + AI建议
+                    if is_selling:
+                        sp_key = f"sp_{i}"
+                        ai_key = f"ai_{i}"
+
+                        # AI生成建议按钮
+                        if st.button("AI帮我写", key=f"btn_ai_{i}"):
+                            selling_point = issue["suggestion"].replace("请加入: ", "")
+                            prompt = f"""你是小红书母婴KOL文案专家。KOL需要在稿件中加入以下产品卖点：
+「{selling_point}」
+
+请生成3个不同风格的表达方式，要求：
+1. 口语化、接地气、像妈妈在分享
+2. 不能用禁词（敏宝、过敏、预防、新生儿、免疫、生长、发育）
+3. 每个控制在30字以内
+
+格式：
+1. [表达1]
+2. [表达2]
+3. [表达3]"""
+                            with st.spinner("AI思考中..."):
+                                result = call_claude_api(prompt)
+                                if result:
+                                    st.session_state.selling_suggestions[sp_key] = result
+
+                        # 显示AI建议（如果有）
+                        if sp_key in st.session_state.selling_suggestions:
+                            st.markdown("**AI建议的表达方式：**")
+                            suggestions_text = st.session_state.selling_suggestions[sp_key]
+                            # 解析建议选项
+                            suggestion_lines = [l.strip() for l in suggestions_text.split('\n') if l.strip() and l.strip()[0].isdigit()]
+                            for si, sline in enumerate(suggestion_lines):
+                                # 去掉序号
+                                clean = re.sub(r'^\d+[\.\、\)]\s*', '', sline)
+                                if st.button(f"选用: {clean}", key=f"pick_{i}_{si}"):
+                                    st.session_state.selling_inputs[sp_key] = clean
+
+                        # 手动输入框
+                        current_val = st.session_state.selling_inputs.get(sp_key, "")
+                        user_input = st.text_input(
+                            "自定义写法",
+                            value=current_val,
+                            placeholder="在此输入你的表达方式...",
+                            key=f"input_{i}",
+                        )
+                        if user_input:
+                            st.session_state.selling_inputs[sp_key] = user_input
+                        st.markdown("---")
 
     # 补充意见 + 生成文档（全宽）
     st.markdown("---")
@@ -406,7 +464,8 @@ if st.session_state.kol_issues and st.session_state.kol_content:
                     st.session_state.kol_content,
                     st.session_state.kol_issues,
                     selected, kol_name, version_num, 2,
-                    extra_comments if extra_comments else None
+                    extra_comments if extra_comments else None,
+                    st.session_state.selling_inputs
                 )
                 st.download_button("下载文档 - 可发给客户", buffer, f"{output_name}.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", key="dl_kol")
 
