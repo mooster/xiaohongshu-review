@@ -10,9 +10,12 @@ from docx.shared import Pt, RGBColor
 from docx.enum.text import WD_COLOR_INDEX
 import io
 import urllib.request
+import base64
 
 RULE_VERSION = "2026-02-04"
 TODAY = datetime.now().strftime("%Y%m%d")
+
+AVATAR_URL = "https://i.imgur.com/YqKZvKx.jpg"
 
 REVIEW_RULES = {
     "required_keywords": ["适度水解", "防敏", "能恩全护"],
@@ -187,10 +190,37 @@ def create_annotated_docx(content, issues, selected_issues, kol_name, version, s
     buffer.seek(0)
     return buffer, title
 
-st.set_page_config(page_title="小红书KOL审稿系统", page_icon="🔍", layout="wide")
+st.set_page_config(page_title="审稿机器人 - 兔子小姐", page_icon="🐰", layout="wide")
 
 st.markdown("""
 <style>
+.header-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+.avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 3px solid #ff6b6b;
+    object-fit: cover;
+}
+.title-text {
+    text-align: center;
+}
+.title-text h1 {
+    color: #ff6b6b;
+    margin: 0;
+    font-size: 28px;
+}
+.title-text p {
+    color: #888;
+    margin: 5px 0 0 0;
+    font-size: 14px;
+}
 .kol-box {
     background-color: #fff0f3;
     border: 2px solid #ff6b6b;
@@ -232,8 +262,16 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<h1 style='text-align:center;color:#ff6b6b;'>小红书KOL审稿系统</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align:center;color:gray;'>能恩全护 - 完整审核工作流</p>", unsafe_allow_html=True)
+st.markdown(f"""
+<div class="header-container">
+    <img src="{AVATAR_URL}" class="avatar" alt="头像">
+    <div class="title-text">
+        <h1>🐰 审稿机器人</h1>
+        <p>for 兔子小姐的能恩项目</p>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
 st.markdown("---")
 
 col1, col2 = st.columns(2)
@@ -452,4 +490,6 @@ with col3:
     """)
 
 st.markdown("---")
-st.caption(f"小红书KOL审稿系统 v3.0 | {RULE_VERSION}")
+st.caption("🐰 审稿机器人 for 兔子小姐的能恩项目 v3.0")
+```
+
