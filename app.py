@@ -484,6 +484,10 @@ st.markdown("""
 .nav-part2 { background: #f0faf4; color: #2e7d32; border-right: 2px solid #ddd; }
 .nav-part3 { background: #fff8e1; color: #f57c00; border-right: 2px solid #ddd; }
 .nav-part4 { background: #fce4ec; color: #c2185b; }
+/* 默认容器样式 - 防止样式泄漏 */
+[data-testid="stVerticalBlockBorderWrapper"] {
+    background-color: white !important;
+}
 /* Part1 蓝紫色 */
 [data-testid="stVerticalBlockBorderWrapper"]:has(#part1-marker) {
     background-color: #f5f3ff !important;
