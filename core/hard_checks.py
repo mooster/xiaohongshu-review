@@ -153,7 +153,7 @@ def check_forbidden_words(full_text: str, config: dict) -> dict:
     # 标签中的违禁词检查
     tags = extract_hashtags(full_text)
     tag_violations = []
-    safe_tags = {"#防敏奶粉", "#第一口奶粉"}
+    safe_tags = set(config.get("safe_tags", ["#防敏奶粉", "#第一口奶粉"]))
     for tag in tags:
         for fw in forbidden_list:
             word = fw["word"]

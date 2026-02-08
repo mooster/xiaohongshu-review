@@ -124,7 +124,8 @@ def auto_fix_all(titles, body, tags, config):
     for req in required_tags:
         tag = req["tag"]
         if tag not in new_tags:
-            new_tags = new_tags.rstrip() + tag
+            sep = " " if new_tags and not new_tags.endswith(" ") else ""
+            new_tags = new_tags.rstrip() + sep + tag
             changes.append({"type": "标签补齐", "old": "(缺失)", "new": tag, "count": 1, "scope": "标签"})
 
     return new_titles, new_body, new_tags, changes

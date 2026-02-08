@@ -26,48 +26,6 @@ def count_tag_occurrences(text: str, tag: str) -> int:
     return 0
 
 
-def extract_titles(text: str) -> list[str]:
-    """从文本中提取标题行（非空、非标签、长度适中的行）"""
-    lines = text.strip().split('\n')
-    titles = []
-    for line in lines:
-        line = line.strip()
-        if line and not line.startswith('#') and 5 <= len(line) <= 50:
-            titles.append(line)
-    return titles
-
-
-def split_content(text: str) -> dict:
-    """将完整文本拆分为标题、正文、标签"""
-    lines = text.strip().split('\n')
-    titles = []
-    body_lines = []
-    tags_line = ""
-
-    in_body = False
-    for line in lines:
-        stripped = line.strip()
-        if not stripped:
-            if in_body:
-                body_lines.append("")
-            continue
-
-        # 检测标签行
-        if stripped.count('#') >= 3:
-            tags_line = stripped
-            continue
-
-        # 检测标题（短行，在正文之前）
-        if not in_body and 5 <= count_chinese(stripped) <= 30 and len(titles) < 5:
-            titles.append(stripped)
-        else:
-            in_body = True
-            body_lines.append(stripped)
-
-    body = '\n'.join(body_lines).strip()
-    return {"titles": titles, "body": body, "tags": tags_line}
-
-
 def read_docx(file) -> str:
     """读取 .docx 文件内容"""
     doc = Document(io.BytesIO(file.read()))

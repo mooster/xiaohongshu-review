@@ -45,6 +45,7 @@
       {"word": "发育", "category": "禁疗效表述", "replacement": ""},
       {"word": "免疫", "category": "禁疗效表述", "replacement": "自护力"}
     ],
+    "safe_tags": ["#防敏奶粉", "#第一口奶粉"],
     "special_replacements": [
       {
         "find": "第一口奶",

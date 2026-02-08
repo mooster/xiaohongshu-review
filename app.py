@@ -13,6 +13,21 @@ from ui.styles import MAIN_CSS
 st.set_page_config(page_title="赞意AI - 审稿系统", page_icon="📝", layout="wide", initial_sidebar_state="expanded")
 st.markdown(MAIN_CSS, unsafe_allow_html=True)
 
+
+def find_check(results, check_id):
+    """安全地从审核结果中查找指定检查项"""
+    for r in results:
+        if r["id"] == check_id:
+            return r
+    # 默认值（不同检查项需要不同字段）
+    defaults = {
+        "forbidden_words": {"id": check_id, "pass": True, "message": "未检查", "violations": [], "special_violations": [], "tag_violations": []},
+        "selling_points": {"id": check_id, "pass": True, "message": "未检查", "total": 0, "passed": 0, "paragraphs": []},
+        "title_keywords": {"id": check_id, "pass": True, "message": "未检查", "missing": []},
+        "structure": {"id": check_id, "pass": True, "message": "未检查", "missing_sections": [], "order_correct": True, "expected_order": [], "actual_order": []},
+    }
+    return defaults.get(check_id, {"id": check_id, "pass": True, "message": "未检查"})
+
 # ── state ──
 INIT = {
     "results": None, "titles": [], "body": "", "tags": "",
@@ -209,7 +224,7 @@ st.markdown(
 
 basic_ids = {"word_count", "title_count", "title_keywords", "hashtags", "forbidden_words"}
 basic_checks = [r for r in results if r["id"] in basic_ids]
-fw_r = next(r for r in results if r["id"] == "forbidden_words")
+fw_r = find_check(results, "forbidden_words")
 fwc = len(fw_r.get("violations", []))
 basic_pass = sum(1 for r in basic_checks if r["pass"])
 basic_total = len(basic_checks)
@@ -316,7 +331,7 @@ else:
             st.text_area("选中 Ctrl+A → Ctrl+C 复制", value=full_fixed, height=200, key="copy_fixed")
 
     # ── 标题编辑（如果标题关键词未通过）──
-    title_kw_r = next(r for r in st.session_state.results if r["id"] == "title_keywords")
+    title_kw_r = find_check(st.session_state.results, "title_keywords")
     if not title_kw_r["pass"]:
         st.markdown("---")
         st.warning(f"标题关键词缺失：{'、'.join(title_kw_r['missing'])}，请编辑标题补充")
@@ -346,8 +361,8 @@ if st.session_state.is_fixed:
     )
 
     fixed_results = st.session_state.results
-    sp_r = next(r for r in fixed_results if r["id"] == "selling_points")
-    struct_r = next(r for r in fixed_results if r["id"] == "structure")
+    sp_r = find_check(fixed_results, "selling_points")
+    struct_r = find_check(fixed_results, "structure")
 
     # 段落结构
     struct_icon = "✅" if struct_r["pass"] else "❌"
@@ -483,7 +498,7 @@ if st.session_state.is_fixed:
             st.markdown(render_full_audit_table(ai_r), unsafe_allow_html=True)
 
             # 卖点明细（直接展开）
-            ai_sp = next(r for r in ai_r if r["id"] == "selling_points")
+            ai_sp = find_check(ai_r, "selling_points")
             st.markdown("**卖点必提词明细：**")
             st.markdown(render_sp_table(ai_sp), unsafe_allow_html=True)
 
@@ -533,7 +548,7 @@ if st.session_state.final_results:
     st.markdown(check_html, unsafe_allow_html=True)
 
     # 卖点逐条
-    final_sp = next(r for r in fr if r["id"] == "selling_points")
+    final_sp = find_check(fr, "selling_points")
     st.markdown("**卖点必提词逐条检查:**")
     st.markdown(render_sp_table(final_sp), unsafe_allow_html=True)
 
