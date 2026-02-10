@@ -6,8 +6,9 @@ sys.path.insert(0, os.path.dirname(__file__))
 from core.config_loader import load_config, list_configs
 from core.text_utils import count_chinese, read_docx
 from core.hard_checks import run_all_checks
-from core.auto_fix import auto_fix_all, highlight_original, highlight_revised
+from core.auto_fix import auto_fix_all, highlight_original, highlight_revised, diff_highlight
 from core.llm_client import rewrite_full_body
+from core.doc_export import generate_diff_docx, generate_clean_docx
 from ui.styles import MAIN_CSS
 
 st.set_page_config(page_title="赞意AI - 审稿系统", page_icon="📝", layout="wide", initial_sidebar_state="expanded")
@@ -443,13 +444,15 @@ if st.session_state.is_fixed:
     else:
         ai_body = st.session_state.ai_body
 
-        # 左右对比：修复后 vs 人话改写
+        # 左右对比：修复后 vs 人话改写（红绿黄高亮）
         st.markdown("#### 人话修改对比")
+        st.caption("🔴 红色=删除  🟡 黄色=被替换原文  🟢 绿色=新增/替换后")
+        before_hl, after_hl = diff_highlight(st.session_state.fixed_body, ai_body)
         col_l, col_r = st.columns(2)
         with col_l:
             st.markdown('<div class="diff-label orig">修复后版本</div>', unsafe_allow_html=True)
             st.markdown(
-                f'<div class="diff-panel original">{st.session_state.fixed_body.replace(chr(10), "<br>")}</div>',
+                f'<div class="diff-panel original">{before_hl}</div>',
                 unsafe_allow_html=True,
             )
             with st.expander("📋 复制修复后全文"):
@@ -459,12 +462,39 @@ if st.session_state.is_fixed:
         with col_r:
             st.markdown('<div class="diff-label rev">✅ 人话修改版</div>', unsafe_allow_html=True)
             st.markdown(
-                f'<div class="diff-panel revised">{ai_body.replace(chr(10), "<br>")}</div>',
+                f'<div class="diff-panel revised">{after_hl}</div>',
                 unsafe_allow_html=True,
             )
             with st.expander("📋 复制人话版全文"):
                 fa = build_full_text(st.session_state.fixed_titles, ai_body, st.session_state.fixed_tags)
                 st.text_area("选中 Ctrl+A → Ctrl+C 复制", value=fa, height=200, key="copy_ai")
+
+        # 下载标注版 .docx
+        st.markdown("#### 下载文档")
+        dl1, dl2 = st.columns(2)
+        with dl1:
+            diff_doc = generate_diff_docx(
+                st.session_state.fixed_titles,
+                st.session_state.fixed_body, ai_body,
+                st.session_state.fixed_tags,
+                title_label="人话修改 · 标注对比",
+            )
+            st.download_button(
+                "📥 下载标注版 .docx", data=diff_doc,
+                file_name="人话修改_标注版.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                use_container_width=True,
+            )
+        with dl2:
+            clean_doc = generate_clean_docx(
+                st.session_state.fixed_titles, ai_body, st.session_state.fixed_tags,
+            )
+            st.download_button(
+                "📥 下载纯净版 .docx", data=clean_doc,
+                file_name="人话修改_纯净版.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                use_container_width=True,
+            )
 
         # 在线微调
         with st.expander("✍️ 在线微调"):
@@ -552,23 +582,55 @@ if st.session_state.final_results:
     st.markdown("**卖点必提词逐条检查:**")
     st.markdown(render_sp_table(final_sp), unsafe_allow_html=True)
 
-    # 最终稿预览
+    # ── 原稿 vs 终稿 对比（红绿黄高亮）──
     st.markdown("---")
-    st.markdown("#### 📄 最终稿件")
+    st.markdown("#### 📄 原稿 vs 终稿 对比")
+    st.caption("🔴 红色=删除  🟡 黄色=被替换原文  🟢 绿色=新增/替换后")
+    final_before_hl, final_after_hl = diff_highlight(body, final_body)
+    col_fl, col_fr = st.columns(2)
+    with col_fl:
+        st.markdown('<div class="diff-label orig">❌ 原稿</div>', unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="diff-panel original">{final_before_hl}</div>',
+            unsafe_allow_html=True,
+        )
+    with col_fr:
+        st.markdown('<div class="diff-label rev">✅ 终稿</div>', unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="diff-panel revised">{final_after_hl}</div>',
+            unsafe_allow_html=True,
+        )
+    st.caption(f"终稿字数: {count_chinese(final_body)}")
 
     st.markdown("**标题:**")
     for i, t in enumerate(final_titles):
         st.markdown(f"**{i+1}.** {t}")
 
-    st.markdown("**正文:**")
-    st.markdown(
-        f'<div class="diff-panel revised">{final_body.replace(chr(10), "<br>")}</div>',
-        unsafe_allow_html=True,
-    )
-    st.caption(f"字数: {count_chinese(final_body)}")
-
     st.markdown("**标签:**")
     st.text(final_tags)
+
+    # ── 下载文档 ──
+    st.markdown("#### 下载文档")
+    dl_f1, dl_f2 = st.columns(2)
+    with dl_f1:
+        final_diff_doc = generate_diff_docx(
+            final_titles, body, final_body, final_tags,
+            title_label="终稿 · 原稿对比标注",
+        )
+        st.download_button(
+            "📥 下载标注版 .docx", data=final_diff_doc,
+            file_name="终稿_标注版.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            use_container_width=True,
+        )
+    with dl_f2:
+        final_clean_doc = generate_clean_docx(final_titles, final_body, final_tags)
+        st.download_button(
+            "📥 下载终稿 .docx", data=final_clean_doc,
+            file_name="终稿.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            use_container_width=True,
+        )
 
     # 复制终稿
     with st.expander("📋 复制终稿全文"):

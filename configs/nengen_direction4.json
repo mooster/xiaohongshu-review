@@ -2,20 +2,23 @@
   "meta": {
     "brand": "能恩全护",
     "product": "ENCARE",
-    "direction": "育婴师防敏科普",
-    "direction_id": "direction_1",
+    "direction": "反向经验分享（剖腹产）",
+    "direction_id": "direction_4",
     "platform": "小红书",
     "version": "v1.0"
   },
+
   "hard_rules": {
     "word_count": {
       "min": 800,
       "max": 900
     },
+
     "titles": {
       "required_count": 3,
-      "keywords": ["适度水解", "防敏", "科普"]
+      "keywords": ["剖妈经验", "第一口奶粉", "剖宝喂养"]
     },
+
     "hashtags": {
       "required": [
         {"tag": "#能恩全护", "min_count": 3},
@@ -25,9 +28,12 @@
         {"tag": "#适度水解奶粉推荐", "min_count": 1},
         {"tag": "#防敏奶粉", "min_count": 1},
         {"tag": "#第一口奶粉", "min_count": 1},
-        {"tag": "#雀巢适度水解", "min_count": 1}
+        {"tag": "#雀巢适度水解", "min_count": 1},
+        {"tag": "#剖宝", "min_count": 1},
+        {"tag": "#剖宝奶粉", "min_count": 1}
       ]
     },
+
     "forbidden_words": [
       {"word": "敏宝", "category": "禁止词", "replacement": ""},
       {"word": "奶瓶", "category": "禁止词", "replacement": ""},
@@ -43,123 +49,141 @@
       {"word": "预防", "category": "禁疗效表述", "replacement": "防护"},
       {"word": "生长", "category": "禁疗效表述", "replacement": "成长"},
       {"word": "发育", "category": "禁疗效表述", "replacement": ""},
-      {"word": "免疫", "category": "禁疗效表述", "replacement": "自护力"}
+      {"word": "免疫", "category": "禁疗效表述", "replacement": "自护力"},
+      {"word": "剖腹产", "category": "禁止词", "replacement": "剖一刀"}
     ],
-    "safe_tags": ["#防敏奶粉", "#第一口奶粉"],
+
+    "safe_tags": ["#防敏奶粉", "#第一口奶粉", "#剖宝", "#剖宝奶粉"],
+
     "special_replacements": [
       {
         "find": "第一口奶",
         "replace_with": ["第一口", "第一口奶粉"],
         "skip_if_followed_by": "粉",
-        "description": "「第一口奶」必须替换为「第一口」或「第一口奶粉」"
+        "description": "「第一口奶」必须替换为「第一口奶粉」"
       },
       {
         "find": "雀巢的尖峰水解技术",
         "replace_with": ["多项科学实证的雀巢尖峰水解科技"],
-        "description": "必须包含卖点2完整必提词"
+        "description": "必须包含卖点完整必提词"
       }
     ],
+
     "structure": {
       "paragraphs": [
         {
           "id": "p1",
-          "name": "敏敏现状",
+          "name": "反向经验",
           "order": 1,
-          "anchor_keywords": ["40%", "80%", "敏敏发生率", "敏敏表现"],
+          "anchor_keywords": ["剖一刀", "剖宝", "剖宝体质弱", "产道"],
           "selling_points": [
             {
               "id": "sp1",
               "name": "卖点1",
-              "required_keywords": ["40%", "80%"],
-              "paraphrase_ref": "我国初生宝宝敏敏率高达40%，要是有父母敏敏史，宝宝敏敏的概率将飙升到80%；现在国内敏敏高发，要预防敏敏。或者爸妈都有敏敏，担心宝宝也会敏敏"
+              "required_keywords": ["产道挤压", "同类益生菌", "剖宝体质弱"],
+              "paraphrase_ref": "剖宝出生没经过妈妈产道挤压，无法从妈妈产道获得同类益生菌，所以肚内菌菌形成更晚，宝宝体质更弱，更容易引发潜在健康问题"
             }
           ]
         },
         {
           "id": "p2",
-          "name": "防敏-水解技术",
+          "name": "自护力",
           "order": 2,
-          "anchor_keywords": ["水解", "尖峰", "GINI", "1000倍", "小分子"],
+          "anchor_keywords": ["HMO", "双菌", "B.Infantis", "Bb-12", "自护", "28天"],
           "selling_points": [
             {
               "id": "sp2",
               "name": "卖点2",
-              "required_keywords": ["多项科学实证的雀巢尖峰水解科技", "适度水解小分子牛奶蛋白"],
-              "paraphrase_ref": "易敏的大分子牛奶蛋白切割成温和的适度水解小分子牛奶蛋白，精准去掉致敏片段的同时，又完整保留了蛋白有益营养"
+              "required_keywords": ["全球创新的超倍自护科技", "6种HMO", "明星双菌", "B.Infantis和Bb-12", "协同作用", "高倍原生保护力"],
+              "paraphrase_ref": "采用全球创新的超倍自护科技，6种HMO加上明星双菌B.Infantis和Bb-12，协同作用释放高倍原生保护力"
             },
             {
               "id": "sp3",
               "name": "卖点3",
-              "required_keywords": ["防敏领域权威", "德国GINI", "20年", "致敏性降低1000倍"],
-              "paraphrase_ref": "防敏领域权威德国GINI研究认证，能长效防敏20年，相比于牛奶蛋白致敏性降低1000倍"
+              "required_keywords": ["28天", "从肚肚到全身"],
+              "paraphrase_ref": "短短28天就能调理好娃的肚肚菌菌环境，从肚肚到全身都建起坚固的防护屏障"
             },
             {
               "id": "sp4",
               "name": "卖点4",
-              "required_keywords": [],
-              "paraphrase_ref": "全球专业人士优先推荐呢"
+              "required_keywords": ["持续15个月"],
+              "paraphrase_ref": "保护力能持续15个月，助力娃成长"
             },
             {
               "id": "sp5",
               "name": "卖点5",
-              "required_keywords": [],
-              "paraphrase_ref": "欧盟认可及全球30+科学实证背书，硬实力真材实料摆出来!"
+              "required_keywords": ["四维曲线"],
+              "paraphrase_ref": "四维成长曲线特别出色"
             }
           ]
         },
         {
           "id": "p3",
-          "name": "自护力",
+          "name": "敏敏现状",
           "order": 3,
-          "anchor_keywords": ["HMO", "双菌", "B.Infantis", "Bb-12", "自护", "28天"],
+          "anchor_keywords": ["40%", "80%", "敏敏发生率", "敏敏表现"],
           "selling_points": [
             {
               "id": "sp6",
               "name": "卖点6",
-              "required_keywords": ["全球创新的超倍自护科技", "6种HMO", "明星双菌", "B.Infantis和Bb-12", "协同作用", "高倍原生保护力"],
-              "paraphrase_ref": "采用了全球创新的超倍自护科技，6种HMO加上明星双菌B.Infantis和Bb-12，两者强强联合，协同作用释放高倍的原生保护力"
-            },
-            {
-              "id": "sp7",
-              "name": "卖点7",
-              "required_keywords": ["28天", "从肚肚到全身"],
-              "paraphrase_ref": "短短28天就能调理好娃的肚肚菌菌环境，从肚肚到全身都建起坚固的防护屏障"
-            },
-            {
-              "id": "sp8",
-              "name": "卖点8",
-              "required_keywords": ["持续15个月"],
-              "paraphrase_ref": "保护力能持续15个月，助力娃成长"
-            },
-            {
-              "id": "sp9",
-              "name": "卖点9",
-              "required_keywords": ["四维曲线"],
-              "paraphrase_ref": "四维成长曲线特别出色，肉嘟嘟的特别可爱"
+              "required_keywords": ["40%", "80%"],
+              "paraphrase_ref": "我国初生宝宝敏敏率高达40%，要是有父母敏敏史，宝宝敏敏的概率将飙升到80%"
             }
           ]
         },
         {
           "id": "p4",
-          "name": "基础营养",
+          "name": "防敏-水解技术",
           "order": 4,
-          "anchor_keywords": ["维生素", "矿物质", "全乳糖", "口味清淡", "基础营养"],
+          "anchor_keywords": ["水解", "尖峰", "GINI", "1000倍", "小分子"],
           "selling_points": [
+            {
+              "id": "sp7",
+              "name": "卖点7",
+              "required_keywords": ["多项科学实证的雀巢尖峰水解科技", "适度水解小分子牛奶蛋白"],
+              "paraphrase_ref": "易敏的大分子牛奶蛋白切割成温和的适度水解小分子牛奶蛋白，精准去掉致敏片段"
+            },
+            {
+              "id": "sp8",
+              "name": "卖点8",
+              "required_keywords": ["防敏领域权威", "德国GINI", "20年", "致敏性降低1000倍"],
+              "paraphrase_ref": "防敏领域权威德国GINI研究认证，能长效防敏20年，致敏性降低1000倍"
+            },
+            {
+              "id": "sp9",
+              "name": "卖点9",
+              "required_keywords": [],
+              "paraphrase_ref": "全球专业人士优先推荐"
+            },
             {
               "id": "sp10",
               "name": "卖点10",
+              "required_keywords": [],
+              "paraphrase_ref": "欧盟认可及全球30+科学实证背书"
+            }
+          ]
+        },
+        {
+          "id": "p5",
+          "name": "基础营养",
+          "order": 5,
+          "anchor_keywords": ["维生素", "矿物质", "全乳糖", "口味清淡", "基础营养"],
+          "selling_points": [
+            {
+              "id": "sp11",
+              "name": "卖点11",
               "required_keywords": ["基础营养"],
               "paraphrase_ref": "基础营养也很抗打"
             },
             {
-              "id": "sp11",
-              "name": "卖点11",
+              "id": "sp12",
+              "name": "卖点12",
               "required_keywords": ["25种维生素和矿物质"],
               "paraphrase_ref": "25种维生素和矿物质拉满"
             },
             {
-              "id": "sp12",
-              "name": "卖点12",
+              "id": "sp13",
+              "name": "卖点13",
               "required_keywords": ["全乳糖的配方", "口味清淡"],
               "paraphrase_ref": "全乳糖的配方口味清淡，宝宝爱喝"
             }
@@ -168,9 +192,10 @@
       ]
     }
   },
+
   "soft_rules": {
     "style": "小红书爆文风格",
-    "persona": "育婴师/营养师",
+    "persona": "有剖腹产经历的宝妈",
     "tone_markers": ["我", "你", "咱", "姐妹", "说实话", "真的", "绝了"],
     "emoji_expected": true
   }

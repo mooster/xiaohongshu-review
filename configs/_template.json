@@ -1,0 +1,131 @@
+{
+  "meta": {
+    "brand": "【填品牌名，如：能恩全护】",
+    "product": "【填产品英文名，如：ENCARE】",
+    "direction": "【填方向名称，如：育婴师防敏科普】",
+    "direction_id": "【填方向编号，如：direction_2】",
+    "platform": "小红书",
+    "version": "v1.0"
+  },
+
+  "hard_rules": {
+
+    "word_count": {
+      "min": 800,
+      "max": 900
+    },
+
+    "titles": {
+      "required_count": 3,
+      "keywords": ["【标题必含关键词1】", "【标题必含关键词2】", "【标题必含关键词3】"]
+    },
+
+    "hashtags": {
+      "required": [
+        {"tag": "#标签1", "min_count": 3},
+        {"tag": "#标签2", "min_count": 3},
+        {"tag": "#标签3", "min_count": 1},
+        {"tag": "#标签4", "min_count": 1}
+      ]
+    },
+
+    "forbidden_words": [
+      {
+        "word": "【违禁词】",
+        "category": "禁止词",
+        "replacement": "【替换为什么，留空表示直接删除】",
+        "exceptions": ["【例外词1，包含违禁词但允许使用的词】"]
+      },
+      {
+        "word": "过敏",
+        "category": "禁止词",
+        "replacement": "敏敏",
+        "exceptions": []
+      }
+    ],
+
+    "safe_tags": ["#防敏奶粉", "#第一口奶粉"],
+
+    "special_replacements": [
+      {
+        "find": "【要查找的词】",
+        "replace_with": ["【替换选项1】", "【替换选项2】"],
+        "description": "【说明：什么情况下替换】"
+      }
+    ],
+
+    "structure": {
+      "paragraphs": [
+        {
+          "id": "p1",
+          "name": "【第1段主题名称，如：敏敏现状】",
+          "order": 1,
+          "anchor_keywords": ["【锚点词1】", "【锚点词2】"],
+          "selling_points": [
+            {
+              "id": "sp1",
+              "name": "卖点1",
+              "required_keywords": ["【必提词A】", "【必提词B】"],
+              "paraphrase_ref": "【参考原文/人话改写参考，AI会参考这段来改写】"
+            },
+            {
+              "id": "sp2",
+              "name": "卖点2",
+              "required_keywords": [],
+              "paraphrase_ref": "【如果没有必提词，留空数组[]，这个卖点只做人话评估】"
+            }
+          ]
+        },
+        {
+          "id": "p2",
+          "name": "【第2段主题名称】",
+          "order": 2,
+          "anchor_keywords": ["【锚点词】"],
+          "selling_points": [
+            {
+              "id": "sp3",
+              "name": "卖点3",
+              "required_keywords": ["【必提词】"],
+              "paraphrase_ref": "【参考原文】"
+            }
+          ]
+        },
+        {
+          "id": "p3",
+          "name": "【第3段主题名称】",
+          "order": 3,
+          "anchor_keywords": ["【锚点词】"],
+          "selling_points": [
+            {
+              "id": "sp4",
+              "name": "卖点4",
+              "required_keywords": ["【必提词】"],
+              "paraphrase_ref": "【参考原文】"
+            }
+          ]
+        },
+        {
+          "id": "p4",
+          "name": "【第4段主题名称】",
+          "order": 4,
+          "anchor_keywords": ["【锚点词】"],
+          "selling_points": [
+            {
+              "id": "sp5",
+              "name": "卖点5",
+              "required_keywords": ["【必提词】"],
+              "paraphrase_ref": "【参考原文】"
+            }
+          ]
+        }
+      ]
+    }
+  },
+
+  "soft_rules": {
+    "style": "小红书爆文风格",
+    "persona": "【填KOL人设，如：育婴师/营养师/宝妈】",
+    "tone_markers": ["我", "你", "咱", "姐妹", "说实话", "真的", "绝了"],
+    "emoji_expected": true
+  }
+}

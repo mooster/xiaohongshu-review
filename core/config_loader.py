@@ -47,17 +47,19 @@ def list_configs() -> list[dict]:
     if not os.path.isdir(CONFIG_DIR):
         return configs
     for f in sorted(os.listdir(CONFIG_DIR)):
-        if f.endswith('.json'):
+        if f.endswith('.json') and not f.startswith('_'):
             path = os.path.join(CONFIG_DIR, f)
             try:
                 with open(path, 'r', encoding='utf-8') as fh:
                     data = json.load(fh)
                     meta = data.get("meta", {})
+                    did = meta.get("direction_id", "")
+                    num = did.replace("direction_", "方向") if did.startswith("direction_") else ""
                     configs.append({
                         "file": f.replace('.json', ''),
                         "brand": meta.get("brand", "未知"),
                         "direction": meta.get("direction", "未知"),
-                        "label": f"{meta.get('brand', '未知')} - {meta.get('direction', '未知')}",
+                        "label": f"{num} · {meta.get('direction', '未知')}" if num else f"{meta.get('brand', '未知')} - {meta.get('direction', '未知')}",
                     })
             except (json.JSONDecodeError, KeyError):
                 continue

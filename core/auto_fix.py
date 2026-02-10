@@ -1,5 +1,6 @@
 """自动修复引擎 - 一键修复所有可自动修复的问题"""
 import re
+import difflib
 from core.text_utils import count_chinese
 
 
@@ -74,10 +75,11 @@ def auto_fix_all(titles, body, tags, config):
                         "scope": f"标题{ti+1}",
                     })
 
-    # 2. 特殊替换（第一口奶 → 第一口奶粉）
+    # 2. 特殊替换（通用逻辑）
     for rule in hr.get("special_replacements", []):
         find = rule["find"]
         replace = rule["replace_with"][-1]  # 用最后一个选项
+        skip_suffix = rule.get("skip_if_followed_by", "")
 
         for text_type, text in [("正文", new_body)]:
             count = 0
@@ -88,11 +90,19 @@ def auto_fix_all(titles, body, tags, config):
                 if idx == -1:
                     result += text[i:]
                     break
-                # 检查后面是不是已经是"粉"
-                next_pos = idx + len(find)
-                if next_pos < len(text) and text[next_pos] == "粉":
-                    result += text[i:next_pos]
-                    i = next_pos
+                # 跳过条件：后面紧跟指定字符（如"粉"）
+                skip = False
+                if skip_suffix:
+                    next_pos = idx + len(find)
+                    if next_pos < len(text) and text[next_pos:next_pos + len(skip_suffix)] == skip_suffix:
+                        skip = True
+                # 跳过条件：已经是完整替换词的一部分
+                if not skip and replace in text[max(0, idx - len(replace)):idx + len(find) + len(replace)]:
+                    skip = True
+
+                if skip:
+                    result += text[i:idx + len(find)]
+                    i = idx + len(find)
                 else:
                     result += text[i:idx] + replace
                     count += 1
@@ -129,6 +139,34 @@ def auto_fix_all(titles, body, tags, config):
             changes.append({"type": "标签补齐", "old": "(缺失)", "new": tag, "count": 1, "scope": "标签"})
 
     return new_titles, new_body, new_tags, changes
+
+
+def diff_highlight(text_before, text_after):
+    """对比两段文本，返回带红绿黄高亮的 HTML (before_html, after_html)
+
+    - 红色(hl-bad)：被删除的文字
+    - 黄色(hl-change)：被替换的原文
+    - 绿色(hl-good)：新增/替换后的文字
+    """
+    sm = difflib.SequenceMatcher(None, text_before, text_after, autojunk=False)
+    before_parts = []
+    after_parts = []
+
+    for op, i1, i2, j1, j2 in sm.get_opcodes():
+        if op == 'equal':
+            before_parts.append(text_before[i1:i2])
+            after_parts.append(text_after[j1:j2])
+        elif op == 'delete':
+            before_parts.append(f'<span class="hl-bad">{text_before[i1:i2]}</span>')
+        elif op == 'insert':
+            after_parts.append(f'<span class="hl-good">{text_after[j1:j2]}</span>')
+        elif op == 'replace':
+            before_parts.append(f'<span class="hl-change">{text_before[i1:i2]}</span>')
+            after_parts.append(f'<span class="hl-good">{text_after[j1:j2]}</span>')
+
+    before_html = ''.join(before_parts).replace('\n', '<br>')
+    after_html = ''.join(after_parts).replace('\n', '<br>')
+    return before_html, after_html
 
 
 def highlight_original(text, changes):
